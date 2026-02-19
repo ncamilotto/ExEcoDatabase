@@ -15,7 +15,7 @@ library(dplyr)
 # ─────────────────────────────────────────────────────────────
 
 # 1. File path definition
-file_path <- Sys.getenv("PATH_ExEco_Raw_OCR_Output_1918_1960_v2.0.json")
+file_path <- Sys.getenv("PATH_ExEco_Raw_OCR_Output.json")
 
 # 2. Data loading
 raw_data_list <- fromJSON(file_path, simplifyVector = FALSE)

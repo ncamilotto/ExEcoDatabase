@@ -1,4 +1,4 @@
-#The ExEco Dataset: A Textual Dataset of French Economic and Social Thought (1918–1960)
+# The ExEco Dataset: A Textual Dataset of French Economic and Social Thought (1918–1960)
 
 ![alt text](https://img.shields.io/badge/Language-R-blue.svg)
 ![alt text](https://img.shields.io/badge/License-CC%20BY--NC%204.0-lightgrey.svg)
@@ -7,11 +7,20 @@
 This repository contains the source code and processing pipeline used to generate the ExEco Dataset, a comprehensive textual dataset dedicated to the history of French economic and social thought.
 
 **Title:** *The ExEco Dataset: A Textual Dataset of French Economic and Social Thought (1918–1960)*
+
 **Author:** *Nicolas Camilotto (Université Côte D’Azur, CNRS, GREDEG)*
+
+## Related Publication
+
+This project is associated with the following data paper:
+
+```text
+tdb
+```
 
 ## Abstract
 
-The ExEco Corpus documents the emergence of economic expertise in France, covering the professionalization of the discipline and the continuity of economic thought across the Vichy regime. The dataset comprises 23,508 unique articles (26,418 entries) extracted from eleven major periodicals covering economics, sociology, and history (including Revue d’Économie Politique, Annales, L’Année Sociologique, etc.).
+The ExEco Corpus documents the emergence of economic expertise in France, covering the professionalization of the discipline and the continuity of economic thought across the Vichy regime. The dataset comprises 26 212 documents extracted from eleven major periodicals covering economics, sociology, and history.
 
 This repository focuses on the data processing stage: transforming noisy, page-level OCR outputs into a structured, article-level dataset with high-quality metadata and cleaned text.
 
@@ -119,7 +128,7 @@ Paste the following content and adapt the paths to your local setup:
 PATH_SCRIPTS="path/to/your/ExEcoDatabase/R"
 
 # Full path to the downloaded Raw JSON dataset
-PATH_ExEco_Raw_OCR_Output_1918_1960_v2.0.json="path/to/your/data/ExEco_Raw_OCR_Output_1918_1960_v2.0.json"
+PATH_ExEco_Raw_OCR_Output.json="path/to/your/data/execo_raw_ocr_output.json"
 ```
 
 ### 5. Run the Pipeline
@@ -136,6 +145,6 @@ Note: This license applies to the curated dataset and annotations. The underlyin
 
 If you use this dataset or code in your research, please cite the following paper:
 
-'''
+```text
 tbd
-'''
+```
