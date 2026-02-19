@@ -1,0 +1,17 @@
+# --- configuration files ---
+.Renviron
+
+# --- data ----
+figures/
+data/
+*.json
+*.rds
+*.xlsx
+*.RData
+
+# --- scripts ----
+redacted_scripts/
+(common scripts) creation of the original list.R
+(common scripts) Ajout des métadatas de db001.R
+(main) ExEco_Raw.R
+save_dataset.R
