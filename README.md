@@ -20,7 +20,7 @@ tdb
 
 ## Abstract
 
-The ExEco Corpus documents the emergence of economic expertise in France, covering the professionalization of the discipline and the continuity of economic thought across the Vichy regime. The dataset comprises 26 212 documents extracted from eleven major periodicals covering economics, sociology, and history.
+The ExEco Dataset documents the emergence of economic expertise in France, covering the professionalization of the discipline and the continuity of economic thought across the Vichy regime. The dataset comprises 26 212 documents extracted from eleven major periodicals covering economics, sociology, and history.
 
 This repository focuses on the data processing stage: transforming noisy, page-level OCR outputs into a structured, article-level dataset with high-quality metadata and cleaned text.
 
@@ -69,19 +69,21 @@ The project relies on renv to ensure reproducibility of the environment.
 
 The pipeline transforms the Raw OCR Dataset (page-level text with artifacts) into the Curated Dataset (article-level text, cleaned) through the following steps:
 
-### 1. Article Segmentation (The "Cutting" Process)
+### 1. Text Cleaning
+
+The text undergoes a comprehensive preprocessing and cleaning pipeline to optimize its usability for Natural Language Processing (NLP) analyses:
+
+Typographic and linguistic normalization: Standardization of quotation marks, punctuation, spacing, and language-specific conventions (notably French dates and apostrophes) to ensure textual consistency and downstream NLP compatibility
+- Noise Removal: Stripping OCR artifacts, layout tags, and headers/footers.
+- De-hyphenation: Reconstructing words split across lines.
+- Typography: Normalizing quotes and spacing.
+
+### 2. Article Segmentation (The "Cutting" Process)
 
 A major challenge in the raw files is the absence of systematic page breaks between articles. This repository implements a semi-automated R procedure to reconstruct article boundaries:
 - Start Boundary: The script scans the OCR text using fuzzy matching to locate the current article's Title.
 - End Boundary: To identify where the article stops, the algorithm employs a dual detection strategy. It searches for the Author's Signature (surname or initials) and the Next Article's Title.
 - Truncation: Based on these detected markers, all text preceding the current title and following the signature (and/or the next title) is removed to strictly isolate the article content.
-
-### 2. Text Cleaning
-
-Once isolated, the text undergoes aggressive cleaning to optimize it for Natural Language Processing (NLP):
-- De-hyphenation: Reconstructing words split across lines.
-- Noise Removal: Stripping OCR artifacts, layout tags, and headers/footers.
-- Typography: Normalizing quotes and spacing.
 
 ## Data Availability
 
@@ -89,8 +91,8 @@ The code in this repository requires the Raw OCR Files to run. Both the Raw inpu
 
     Data Repository (Nakala): https://doi.org/10.34847/NKL.0DEE15OW
 
-    Input: ExEco_Raw_v1.0.json (Raw OCR text)
-    Output: ExEco_Curated_v1.0.json (Cleaned text)
+    Input: execo_raw_ocr_output.json (Raw OCR text)
+    Output: execo_dataset.json (Cleaned text)
 
 ## How to Reproduce
 
@@ -133,13 +135,12 @@ PATH_ExEco_Raw_OCR_Output.json="path/to/your/data/execo_raw_ocr_output.json"
 
 ### 5. Run the Pipeline
 
-Open the main.R file located in the root of the repository. This script orchestrates the entire pipeline using the paths defined in your environment.
+Open the main_exco_dataset.R file located in the root of the repository. This script orchestrates the entire pipeline using the paths defined in your environment.
 
 ## License
 
 The code in this repository is available under the MIT License.
 The curated ExEco Dataset is released under the Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0) license.
-Note: This license applies to the curated dataset and annotations. The underlying original documents published before 1956 are in the public domain.
 
 ## Citation
 
