@@ -126,6 +126,15 @@ pipelines <- list(
 CHAR_THRESHOLD <- 50
 WORD_THRESHOLD <- 10
 
+# Configuration list for journal-specific processing.
+# Each entry defines:
+# - journal_label: internal identifier used in the workflow
+# - standardized_journal_name: harmonized journal title for output and metadata
+# - pipeline: extraction/processing strategy adapted to the journal’s structure
+# - run: logical flag indicating whether the journal should be processed.
+#        Set run = FALSE to temporarily exclude a journal from execution
+#        without removing it from the configuration.
+
 journal_config <- list(
   list(journal_label = "annales_d_histoire_economique_et_sociale", standardized_journal_name = "Annales d'histoire économique et sociale", pipeline = "looking_for_author_first", run = TRUE),
   list(journal_label = "droit_social",                             standardized_journal_name = "Droit Social",                             pipeline = "only_overlap_title",       run = TRUE),
