@@ -17,7 +17,10 @@
 generate_initials <- function(author_name, order = c("firstname_first", "surname_first")) {
   order <- match.arg(order)
   
-  if (is.na(author_name)) return(NA_character_)
+  # Guard clause: Bulletproof check to avoid "argument is of length zero" errors
+  if (length(author_name) != 1 || is.na(author_name) || author_name == "") {
+    return(NA_character_)
+  }
   
   final_initials <- NA_character_
   
@@ -83,6 +86,7 @@ generate_initials <- function(author_name, order = c("firstname_first", "surname
   return(final_initials)
 }
 
+
 #' @title extract_surname
 #' 
 #' @description
@@ -98,7 +102,11 @@ generate_initials <- function(author_name, order = c("firstname_first", "surname
 #' @importFrom stringr str_split
 
 extract_surname <- function(author_name) {
-  if (is.na(author_name)) return(NA_character_)
+  
+  # Guard clause: Bulletproof check
+  if (length(author_name) != 1 || is.na(author_name) || author_name == "") {
+    return(NA_character_)
+  }
   
   full_surname <- trimws(str_split(author_name, ",")[[1]][1])
   
@@ -124,27 +132,33 @@ extract_surname <- function(author_name) {
   return(main_surname)
 }
 
-# Apply enrichment to the list
+# ─────────────────────────────────────────────────────────────
+# Apply enrichment to the list (Multi-Authors Support)
+# ─────────────────────────────────────────────────────────────
+
 journal_filtered_extracted_pages <- lapply(journal_filtered_extracted_pages, function(article) {
   
-  current_author <- article$author
+  # Ensure authors are treated as a vector (handles single strings or lists gracefully)
+  current_authors <- unlist(article$author)
   
-  # 1. Extract surname
-  extracted_surname <- extract_surname(current_author)
-  
-  # 2. Calculate initials (both orders)
-  if (!is.na(current_author)) {
-    author_initials_firstname_first <- generate_initials(current_author, order = "firstname_first")
-    author_initials_surname_first   <- generate_initials(current_author, order = "surname_first")
+  # Guard clause for empty authors list
+  if (length(current_authors) == 0 || all(is.na(current_authors))) {
+    article$surname                  <- NA_character_
+    article$initials_firstname_first <- NA_character_
+    article$initials_surname_first   <- NA_character_
   } else {
-    author_initials_firstname_first <- NA_character_
-    author_initials_surname_first   <- NA_character_
+    # 1. Extract surname for all authors
+    article$surname <- unname(sapply(current_authors, extract_surname))
+    
+    # 2. Calculate initials (both orders) for all authors
+    article$initials_firstname_first <- unname(sapply(current_authors, function(a) {
+      if (length(a) == 1 && !is.na(a) && a != "") generate_initials(a, order = "firstname_first") else NA_character_
+    }))
+    
+    article$initials_surname_first <- unname(sapply(current_authors, function(a) {
+      if (length(a) == 1 && !is.na(a) && a != "") generate_initials(a, order = "surname_first") else NA_character_
+    }))
   }
-  
-  # 3. Add new fields
-  article$surname                  <- extracted_surname
-  article$initials_firstname_first <- author_initials_firstname_first
-  article$initials_surname_first   <- author_initials_surname_first
   
   return(article)
 })
@@ -163,7 +177,7 @@ journal_filtered_extracted_pages <- lapply(journal_filtered_extracted_pages, fun
 
 remove_title_prefixes <- function(title) {
   
-  if (is.null(title) || is.na(title)) {
+  if (length(title) != 1 || is.na(title)) {
     return(NA_character_)
   }
 
@@ -181,11 +195,9 @@ remove_title_prefixes <- function(title) {
       
       "(?:",
         # Case A: Elision (l') -> No space required immediately after
-        # (e.g., handles "Review of l'education")
         "l['']",
         "|",
         # Case B: Whole articles -> Space (\\s+) MANDATORY after
-        # (e.g., handles "Review of la langue" but avoids cutting "Review of language")
         "(?:la|le|les|un|une|du|des|d['']un|d['']une)\\s+",
       ")?",
       
@@ -248,7 +260,7 @@ remove_title_prefixes <- function(title) {
 
 shorten_title <- function(title) {
   
-  if (is.null(title) || is.na(title)) {
+  if (length(title) != 1 || is.na(title)) {
     return(NA_character_)
   }
   

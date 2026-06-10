@@ -42,6 +42,7 @@ clean_environment = TRUE
 
 # List of scripts to execute
 preprocessing_scripts <- c(
+  "restore_legacy_pages_structure.R",
   "data_sanitization.R",
   "define_cleaning_function.R",
   "define_reconstruct_hyphenated_words_function.R",

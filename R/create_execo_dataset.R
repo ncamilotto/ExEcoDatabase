@@ -1,3 +1,48 @@
+# ─────────────────────────────────────────────────────────────
+# 1. Aggregate individual journal datasets into ExEco_Dataset
+# ─────────────────────────────────────────────────────────────
+
+# Identify all keys in the intermediate_objects list that correspond to final filtered datasets
+dataset_keys <- grep("_filtered_dataset$", names(intermediate_objects), value = TRUE)
+
+# Extract only these specific datasets
+all_filtered_datasets <- intermediate_objects[dataset_keys]
+
+# Concatenate all journal-specific lists of articles into a single, unified list.
+# By applying unname() to the top-level list BEFORE concatenation, we drop the 
+# journal prefixes (e.g., "journal_name_filtered_dataset") while perfectly 
+# preserving the original article IDs as the names of the final list elements.
+ExEco_Dataset <- do.call(c, unname(all_filtered_datasets))
+
+# ─────────────────────────────────────────────────────────────
+# 2. Format Author Variable
+# ─────────────────────────────────────────────────────────────
+
+# Iterate through the dataset to clean and format the "author" field.
+# The JSON to R conversion often leaves authors in nested lists (e.g., `[[1]] list()`).
+# We flatten these structures and concatenate multiple authors into a single string.
+ExEco_Dataset <- lapply(ExEco_Dataset, function(article) {
+  
+  # Flatten the author list to remove nested structures
+  flat_authors <- unlist(article$author)
+  
+  # Check if the resulting vector is empty (handles NULL and list()) or purely NAs
+  if (length(flat_authors) == 0 || all(is.na(flat_authors))) {
+    article$author <- NA_character_
+  } else {
+    # Filter out any potential NAs mixed with actual names
+    valid_authors <- flat_authors[!is.na(flat_authors)]
+    
+    # Collapse multiple authors into a single string separated by " ; "
+    article$author <- paste(valid_authors, collapse = " ; ")
+  }
+  
+  return(article)
+})
+
+# Output a quick validation message to the console
+message(sprintf("​🗃️​​ ExEco_Dataset successfully created. Total number of articles: %d", length(ExEco_Dataset)))
+
 #' @title apply_french_title_case
 #'
 #' @description 

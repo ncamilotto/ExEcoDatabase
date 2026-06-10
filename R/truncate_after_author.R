@@ -11,7 +11,8 @@
 #' 
 
 count_words <- function(text) {
-  if (is.na(text) || text == "") return(0)
+  # Bulletproof guard clause
+  if (length(text) != 1 || is.na(text) || text == "") return(0)
   
   words <- unlist(strsplit(text, "\\s+"))
   # Filter out empty strings
@@ -35,7 +36,10 @@ count_words <- function(text) {
 #'   if inputs are invalid.
 
 compute_levenshtein_distance <- function(word1, word2) {
-  if (is.na(word1) || is.na(word2) || nchar(word1) == 0 || nchar(word2) == 0) {
+  # Bulletproof guard clause
+  if (length(word1) != 1 || length(word2) != 1 || 
+      is.na(word1) || is.na(word2) || 
+      nchar(word1) == 0 || nchar(word2) == 0) {
     return(Inf)  # Return a large value if one of the words is empty or NA
   }
   
@@ -93,7 +97,7 @@ thresholds_reached <- function(end_position, text) {
 #'   threshold. Returns `NA` if the input surname is missing.
 
 max_allowed_distance <- function(surname) {
-  if (is.na(surname)) return(NA)
+  if (length(surname) != 1 || is.na(surname)) return(NA)
   
   surname_length <- nchar(surname)
   
@@ -160,7 +164,7 @@ detect_surname_in_text <- function(text, surname) {
   # Guard clauses
   # ─────────────────────────────────────────────────────────────
   
-  if (is.na(surname) || surname == "") {
+  if (length(surname) != 1 || is.na(surname) || surname == "") {
     return(list(text = text, found = FALSE))
   }
   
@@ -336,7 +340,7 @@ detect_surname_in_text <- function(text, surname) {
 
 check_initials_in_text <- function(text, initials) {
   
-  if (is.na(initials) || initials == "") {
+  if (length(initials) != 1 || is.na(initials) || initials == "") {
     return(list(text = text, found = FALSE))
   }
   
@@ -411,7 +415,10 @@ check_both_initials_in_text <- function(text, initials_firstname_first, initials
 }
 
 
-# Apply detection methods to articles list
+# ─────────────────────────────────────────────────────────────
+# Apply detection methods to articles list (Multi-Authors Support)
+# ─────────────────────────────────────────────────────────────
+
 journal_filtered_extracted_pages <- mapply(
   function(article, article_id) {
 
@@ -423,53 +430,70 @@ journal_filtered_extracted_pages <- mapply(
       return(article)
     }
     
-    surname                  <- article$surname
-    initials_firstname_first <- article$initials_firstname_first
-    initials_surname_first   <- article$initials_surname_first
+    # We now handle vectors of surnames and initials
+    surnames                  <- unlist(article$surname)
+    initials_firstname_first  <- unlist(article$initials_firstname_first)
+    initials_surname_first    <- unlist(article$initials_surname_first)
     
     # Increment counters for eligible articles
     total_eligible_articles  <<- total_eligible_articles + 1
     total_processed_articles <<- total_processed_articles + 1
     
-    # Step 1: check last name (only if surname is available)
+    # Step 1: check last name across ALL authors
     name_found <- FALSE
-    if (!is.na(surname) && surname != "") {
-      surname_result <- detect_surname_in_text(article$text, surname)
-      article$text <- surname_result$text
-      
-      if (surname_result$found) {
-        total_names_found <<- total_names_found + 1
-        article$needs_truncation <- 0
-        name_found <- TRUE
+    
+    for (s in surnames) {
+      if (length(s) == 1 && !is.na(s) && s != "") {
+        surname_result <- detect_surname_in_text(article$text, s)
+        
+        if (surname_result$found) {
+          article$text <- surname_result$text
+          article$needs_truncation <- 0
+          name_found <- TRUE
+          total_names_found <<- total_names_found + 1
+          break # SUCCESS! Stop searching for other authors
+        }
       }
     }
     
     # Step 2: check both initials orders if name was not found
     if (!name_found) {
       total_without_name_or_initial <<- total_without_name_or_initial + 1
-      if (!is.na(surname) && surname != "") {
+      
+      # Log missing names if at least one valid surname existed
+      valid_surnames <- surnames[!is.na(surnames) & surnames != ""]
+      if (length(valid_surnames) > 0) {
         articles_without_name_found[[article_id]] <<- article
       }
       
-      initials_available <- (!is.na(initials_firstname_first) && initials_firstname_first != "") ||
-                            (!is.na(initials_surname_first)   && initials_surname_first != "")
+      initials_found <- FALSE
       
-      if (initials_available) {
-        initials_result <- check_both_initials_in_text(
-          article$text,
-          initials_firstname_first,
-          initials_surname_first
-        )
-        article$text <- initials_result$text
+      # Iterate over all authors' initials
+      for (i in seq_along(initials_firstname_first)) {
+        init_ff <- initials_firstname_first[i]
+        init_sf <- initials_surname_first[i]
         
-        if (initials_result$found) {
-          total_initials_found <<- total_initials_found + 1
-          article$needs_truncation <- 0
-        } else {
-          articles_without_initials_found[[article_id]] <<- article
+        initials_available <- (length(init_ff) == 1 && !is.na(init_ff) && init_ff != "") ||
+                              (length(init_sf) == 1 && !is.na(init_sf) && init_sf != "")
+        
+        if (initials_available) {
+          initials_result <- check_both_initials_in_text(
+            article$text,
+            init_ff,
+            init_sf
+          )
+          
+          if (initials_result$found) {
+            article$text <- initials_result$text
+            article$needs_truncation <- 0
+            initials_found <- TRUE
+            total_initials_found <<- total_initials_found + 1
+            break # SUCCESS! Stop searching for other initials
+          }
         }
-      } else {
-        # If no initials available, article remains undetected
+      }
+      
+      if (!initials_found) {
         articles_without_initials_found[[article_id]] <<- article
       }
     }
