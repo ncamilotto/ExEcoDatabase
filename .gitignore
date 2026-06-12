@@ -1,5 +1,6 @@
 # --- configuration files ---
 .Renviron
+.Rhistory
 
 # --- data ----
 figures/

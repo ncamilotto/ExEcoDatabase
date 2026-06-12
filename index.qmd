@@ -1,0 +1,455 @@
+---
+title: "ExEco Corpus Explorer"
+format: 
+  dashboard:
+    orientation: rows
+    theme: flatly
+    embed-resources: true
+    expandable: false
+execute:
+  echo: false
+  warning: false
+  message: false
+---
+
+```{r}
+#| label: setup
+#| include: false
+
+library(tidyverse)
+library(readxl)
+library(plotly)
+library(DT)
+library(bslib)
+library(bsicons)
+library(htmltools)
+library(knitr)
+
+# Pensez à ajuster ce chemin si besoin
+file_path <- "data/execo_dataset_metadata.xlsx"
+
+df <- read_excel(file_path)
+
+df <- df %>%
+  mutate(
+    publication_year = as.numeric(publication_year),
+    start_page = as.numeric(str_extract(start_page, "\\d+")),
+    end_page = as.numeric(str_extract(end_page, "\\d+")),
+    nb_pages = end_page - start_page + 1,
+    
+    page_category = case_when(
+      nb_pages == 1 ~ "1 page",
+      nb_pages >= 2 & nb_pages <= 3 ~ "2-3",
+      nb_pages >= 4 & nb_pages <= 5 ~ "4-5",
+      nb_pages >= 6 & nb_pages <= 10 ~ "6-10",
+      nb_pages >= 11 & nb_pages <= 15 ~ "11-15",
+      nb_pages > 15 ~ "> 15",
+      TRUE ~ NA_character_
+    ),
+    
+    page_category = factor(page_category, levels = c("1 page", "2-3", "4-5", "6-10", "11-15", "> 15"))
+  ) %>%
+  filter(!is.na(standardized_journal_name))
+
+# Calcul des KPIs
+n_docs <- nrow(df)
+n_journals <- n_distinct(df$standardized_journal_name)
+years_range <- paste0(min(df$publication_year, na.rm = TRUE), "-", max(df$publication_year, na.rm = TRUE))
+
+# Séparation intelligente des auteurs pour le KPI global
+n_authors <- df %>%
+  filter(!is.na(author)) %>%
+  separate_longer_delim(author, delim = ";") %>%
+  mutate(author = str_trim(author)) %>%
+  pull(author) %>%
+  n_distinct()
+```
+
+```{=html}
+<style>
+/* Style de l'écran de chargement */
+#custom-loader {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: #ecf0f1; 
+  z-index: 99999; 
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  color: #2c3e50;
+  pointer-events: none; 
+}
+
+.spinner {
+  border: 8px solid #bdc3c7;
+  border-top: 8px solid #18bc9c; 
+  border-radius: 50%;
+  width: 60px;
+  height: 60px;
+  animation: spin 1s linear infinite;
+  margin-bottom: 20px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.fade-out {
+  opacity: 0;
+  transition: opacity 0.5s ease-out;
+}
+
+/* Redimensionnement responsif pour les Value Boxes */
+.bslib-value-box .value-box-value {
+  font-size: clamp(1.2rem, 2.2vw, 2.5rem) !important;
+  word-break: break-word;
+}
+.bslib-value-box .value-box-title {
+  font-size: clamp(0.8rem, 1.2vw, 1.2rem) !important;
+}
+
+/* Masquer TOUS les boutons expand (full-screen) sur le dashboard */
+.bslib-full-screen-enter, 
+bslib-tooltip > .bslib-full-screen-enter {
+  display: none !important;
+}
+
+/* Style CSS ultra-léger pour réduire la taille de la police du grand tableau */
+table.custom-dt-table {
+  font-size: 75%;
+}
+
+/* ==================================================== */
+/* CORRECTIONS POUR LE POPOVER (ICÔNE "i")              */
+/* ==================================================== */
+
+/* 1. Forcer le composant bslib à s'afficher en ligne sans marge ni retour à la ligne */
+bslib-popover {
+  display: inline-flex !important;
+  align-items: center !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* 2. Doubler encore la largeur du conteneur (jusqu'à 1200px) et adapter au contenu */
+.popover {
+  max-width: 1200px !important; 
+  width: max-content !important;
+}
+</style>
+
+<!-- Structure de l'écran d'attente -->
+<div id="custom-loader">
+  <div class="spinner"></div>
+  <h2 id="loader-title">Loading ExEco Explorer...</h2>
+  <p id="loader-desc">Preparing the dataset, please wait...</p>
+</div>
+
+<!-- Script intelligent pour gérer le chargement initial ET les clics -->
+<script>
+function hideLoader() {
+  const loader = document.getElementById('custom-loader');
+  if (!loader || loader.style.display === 'none') return;
+  
+  loader.classList.add('fade-out');
+  setTimeout(() => {
+    loader.style.display = 'none';
+  }, 500);
+}
+
+function showLoader(title, desc) {
+  const loader = document.getElementById('custom-loader');
+  if (!loader) return;
+  document.getElementById('loader-title').innerText = title;
+  document.getElementById('loader-desc').innerText = desc;
+  
+  loader.classList.remove('fade-out');
+  loader.style.display = 'flex';
+  loader.style.opacity = '1';
+  
+  // Sécurité anti-blocage : s'enlève seul après 3.5 secondes max
+  setTimeout(() => {
+    hideLoader();
+  }, 3500);
+}
+
+// 1. Au tout premier lancement de la page
+window.addEventListener('load', function() {
+  hideLoader();
+});
+
+// 2. Gestion du clic sur les onglets
+document.addEventListener('DOMContentLoaded', function() {
+  const navLinks = document.querySelectorAll('.nav-link');
+  
+  navLinks.forEach(link => {
+    if (link.textContent.includes("Data Explorer")) {
+      
+      const triggerLoader = function() {
+        if (!link.classList.contains('active')) {
+          showLoader("Loading Data Explorer...", "Organizing 23,000+ rows. The browser may freeze briefly, please hold on.");
+        }
+      };
+
+      link.addEventListener('mousedown', triggerLoader);
+      link.addEventListener('touchstart', triggerLoader, {passive: true});
+    }
+  });
+});
+
+// 3. Quand l'onglet a fini de charger
+document.addEventListener('show.bs.tab', function (e) {
+  if (e.target && e.target.textContent && e.target.textContent.includes("Data Explorer")) {
+     setTimeout(() => {
+        hideLoader();
+     }, 800); 
+  }
+});
+</script>
+```
+
+# General Statistics
+
+## Row {height=15%}
+
+```{r}
+value_box(
+  title = "Total Documents",
+  value = format(n_docs, big.mark = " "),
+  showcase = bs_icon("file-earmark-text"),
+  theme = "dark"
+)
+```
+
+```{r}
+value_box(
+  title = "Journals",
+  value = n_journals,
+  showcase = bs_icon("journal-bookmark"),
+  theme = "info"
+)
+```
+
+```{r}
+value_box(
+  title = "Time Period",
+  value = years_range,
+  showcase = bs_icon("calendar3"),
+  theme = "success"
+)
+```
+
+```{r}
+value_box(
+  title = "Unique Authors",
+  value = format(n_authors, big.mark = " "),
+  showcase = bs_icon("person-lines-fill"),
+  theme = "warning"
+)
+```
+
+## Row {height=45%}
+
+### Column {width=50%}
+
+```{r}
+#| title: "Temporal Distribution of the Corpus"
+p_temp <- ggplot(df, aes(x = publication_year)) +
+  geom_histogram(binwidth = 1, fill = "#2C3E50", color = "white", alpha = 0.9) +
+  theme_minimal() +
+  labs(x = "Publication Year", y = "Number of Documents")
+
+ggplotly(p_temp)
+```
+
+### Column {width=50%}
+
+```{r}
+#| title: "Page Count Distribution"
+p_pages <- ggplot(df %>% filter(!is.na(page_category)), aes(x = page_category)) +
+  geom_bar(fill = "#18BC9C", color = "white", alpha = 0.9) +
+  theme_minimal() +
+  labs(x = "Number of Pages", y = "Number of Documents")
+
+ggplotly(p_pages)
+```
+
+## Row {height=40%}
+
+### Column
+
+```{r}
+#| title: "Document Distribution by Journal"
+df_journals <- df %>%
+  count(standardized_journal_name) %>%
+  arrange(desc(n)) %>%
+  head(20)
+
+p_journ <- ggplot(df_journals, aes(x = reorder(standardized_journal_name, n), y = n, text = paste("Journal: ", standardized_journal_name, "<br>Documents: ", n))) +
+  geom_bar(stat = "identity", fill = "#3498DB", color = "white", alpha = 0.9) +
+  coord_flip() +
+  theme_minimal() +
+  labs(x = "", y = "Number of Documents")
+
+ggplotly(p_journ, tooltip = "text")
+```
+
+
+# Journal Statistics
+
+## Row {.tabset}
+
+```{r}
+#| label: generate-journal-tabs
+#| results: asis
+
+# Extraction des noms de journaux uniques et tri ALPHABÉTIQUE
+journals <- df %>%
+  pull(standardized_journal_name) %>%
+  unique() %>%
+  sort()
+
+# Variable d'échappement pour ne pas tromper le parser Quarto
+tick3 <- "```"
+
+# Création du template 70/30 avec flex-direction: row et flex-wrap: nowrap pour bloquer le passage à la ligne
+template <- paste0(
+  '\n### {{journal}}\n\n',
+  
+  # Conteneur Flex parent forçant l'affichage sur une seule ligne (nowrap)
+  ':::: {style="display: flex; flex-direction: row; flex-wrap: nowrap; gap: 1.5rem; height: 100%; min-height: 0;"}\n\n',
+  
+  # Carte 1 : Graphiques (70%)
+  '::: {.card style="flex: 0 0 calc(70% - 0.75rem); margin-bottom: 0; min-width: 0;"}\n',
+  '::: {.card-header}\n',
+  'Temporal & Page Count Distributions\n',
+  ':::\n',
+  '::: {.card-body style="display: flex; flex-direction: column; padding-bottom: 0;"}\n',
+  tick3, '{r}\n',
+  '#| echo: false\n',
+  'current_journal <- journals[{{i}}]\n',
+  'df_r <- df %>% filter(standardized_journal_name == current_journal)\n',
+  'p1 <- ggplot(df_r, aes(x = publication_year)) +\n',
+  '  geom_histogram(binwidth = 1, fill = "#2C3E50", color = "white", alpha = 0.9) +\n',
+  '  theme_minimal() +\n',
+  '  labs(x = "Year", y = "Documents")\n',
+  'p2 <- ggplot(df_r %>% filter(!is.na(page_category)), aes(x = page_category)) +\n',
+  '  geom_bar(fill = "#18BC9C", color = "white", alpha = 0.9) +\n',
+  '  theme_minimal() +\n',
+  '  labs(x = "Pages", y = "Documents")\n',
+  'plotly::subplot(ggplotly(p1), ggplotly(p2), nrows = 1, titleX = TRUE, titleY = TRUE, margin = 0.08)\n',
+  tick3, '\n',
+  ':::\n',
+  ':::\n\n',
+  
+  # Carte 2 : Table des auteurs (30%)
+  '::: {.card style="flex: 0 0 calc(30% - 0.75rem); margin-bottom: 0; min-width: 0;"}\n',
+  '::: {.card-header}\n',
+  'Author List\n',
+  ':::\n',
+  '::: {.card-body style="display: flex; flex-direction: column; overflow: auto;"}\n',
+  tick3, '{r}\n',
+  '#| echo: false\n',
+  'all_authors <- df_r %>%\n',
+  '  filter(!is.na(author)) %>%\n',
+  '  separate_longer_delim(author, delim = ";") %>%\n',
+  '  mutate(author = str_trim(author)) %>%\n',
+  '  count(author, sort = TRUE) %>%\n',
+  '  rename(`Author Name` = author, `Total Publications` = n)\n',
+  'datatable(\n',
+  '  all_authors, \n',
+  '  options = list(pageLength = 5, dom = "ftp", autoWidth = TRUE), \n',
+  '  rownames = FALSE,\n',
+  '  class = "cell-border stripe hover"\n',
+  ')\n',
+  tick3, '\n',
+  ':::\n',
+  ':::\n\n',
+  
+  '::::\n'
+)
+
+out <- lapply(seq_along(journals), function(i) {
+  knitr::knit_expand(text = template, journal = journals[i], i = i)
+})
+
+res <- knitr::knit_child(text = unlist(out), envir = environment(), quiet = TRUE)
+cat(res)
+```
+
+# Data Explorer
+
+## Row
+
+### Column
+
+```{r}
+df_table <- df %>%
+  select(
+    Author = author, 
+    `Document Title` = document_title, 
+    Year = publication_year, 
+    Journal = standardized_journal_name
+  )
+
+dt <- datatable(
+  df_table,
+  options = list(
+    pageLength = 15,
+    scrollX = TRUE,
+    autoWidth = FALSE,
+    deferRender = TRUE,     
+    orderClasses = FALSE,   
+    searchDelay = 800,
+    columnDefs = list(
+      list(width = '30%', targets = 0), # Author
+      list(width = '50%', targets = 1), # Document Title
+      list(width = '5%', targets = 2),  # Year
+      list(width = '15%', targets = 3)  # Journal 
+    )
+  ),
+  rownames = FALSE,
+  class = "cell-border stripe hover compact custom-dt-table" 
+)
+
+# Structure repensée pour garantir l'alignement texte-icône
+# flex-direction: row et flex-wrap: nowrap sont forcés
+card(
+  card_header(
+    tags$div(
+      style = "display: flex !important; flex-direction: row !important; align-items: center !important; gap: 0.5rem; flex-wrap: nowrap;",
+      tags$span("Explore and Filter the Metadata Corpus", style = "white-space: nowrap; margin-bottom: 0;"),
+      popover(
+        bs_icon("info-circle-fill", class = "text-info", style = "cursor: pointer; font-size: 1.4rem; display: flex;"),
+        HTML("<strong>Data Source</strong><br>The complete dataset, including full texts, is available at:<br><a href='https://www.nakala.fr/10.34847/nkl.0dee15ow' target='_blank'>https://www.nakala.fr/10.34847/nkl.0dee15ow</a>")
+      )
+    )
+  ),
+  card_body(
+    class = "p-0",
+    dt
+  )
+)
+```
+
+# About
+
+## Row
+
+### Column
+
+**About the ExEco Corpus Explorer**
+
+This dashboard provides an interactive overview of the ExEco dataset metadata. 
+
+- **General Statistics**: Offers a macroscopic view of the corpus (temporal distribution, document length, and main journals).
+- **Journal Statistics**: Provides a detailed, journal-by-journal breakdown including publication timelines, page counts, and a searchable database of contributing authors.
+- **Data Explorer**: Allows users to dynamically search, filter, and browse the full metadata table.
+
+*Data source: `execo_dataset_metadata.xlsx` (Generated June 2026).*
