@@ -25,8 +25,7 @@ library(bsicons)
 library(htmltools)
 library(knitr)
 
-# Pensez à ajuster ce chemin si besoin
-file_path <- "data/execo_dataset_metadata.xlsx"
+file_path <- "data/data 10 juin 2026/execo_dataset_metadata.xlsx"
 
 df <- read_excel(file_path)
 
@@ -193,7 +192,7 @@ document.addEventListener('DOMContentLoaded', function() {
       
       const triggerLoader = function() {
         if (!link.classList.contains('active')) {
-          showLoader("Loading Data Explorer...", "Organizing 23,000+ rows. The browser may freeze briefly, please hold on.");
+          showLoader("Loading Data Explorer...", "Organizing 24,000+ rows. The browser may freeze briefly, please hold on.");
         }
       };
 
