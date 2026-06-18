@@ -1,5 +1,5 @@
 ---
-title: "ExEco Corpus Explorer"
+title: "ExEco Dataset Explorer"
 format: 
   dashboard:
     orientation: rows
@@ -258,7 +258,7 @@ value_box(
 ### Column {width=50%}
 
 ```{r}
-#| title: "Temporal Distribution of the Corpus"
+#| title: "Temporal Distribution of the Dataset"
 p_temp <- ggplot(df, aes(x = publication_year)) +
   geom_histogram(binwidth = 1, fill = "#2C3E50", color = "white", alpha = 0.9) +
   theme_minimal() +
@@ -423,7 +423,7 @@ card(
   card_header(
     tags$div(
       style = "display: flex !important; flex-direction: row !important; align-items: center !important; gap: 0.5rem; flex-wrap: nowrap;",
-      tags$span("Explore and Filter the Metadata Corpus", style = "white-space: nowrap; margin-bottom: 0;"),
+      tags$span("Explore and Filter the Metadata Dataset", style = "white-space: nowrap; margin-bottom: 0;"),
       popover(
         bs_icon("info-circle-fill", class = "text-info", style = "cursor: pointer; font-size: 1.4rem; display: flex;"),
         HTML("<strong>Data Source</strong><br>The complete dataset, including full texts, is available at:<br><a href='https://www.nakala.fr/10.34847/nkl.0dee15ow' target='_blank'>https://www.nakala.fr/10.34847/nkl.0dee15ow</a>")
@@ -443,12 +443,26 @@ card(
 
 ### Column
 
-**About the ExEco Corpus Explorer**
+**Welcome to the ExEco Dataset Explorer**
 
-This dashboard provides an interactive overview of the ExEco dataset metadata. 
 
-- **General Statistics**: Offers a macroscopic view of the corpus (temporal distribution, document length, and main journals).
-- **Journal Statistics**: Provides a detailed, journal-by-journal breakdown including publication timelines, page counts, and a searchable database of contributing authors.
-- **Data Explorer**: Allows users to dynamically search, filter, and browse the full metadata table.
+This dashboard is the interactive companion to the **ExEco Dataset**: a comprehensive textual dataset dedicated to the history of French economic and social thought between 1918 and 1960. 
 
-*Data source: `execo_dataset_metadata.xlsx` (Generated June 2026).*
+Covering a pivotal transitional era—spanning the interwar period, the Vichy regime, and post-war reconstruction—this dataset documents the shift from traditional political economy toward professionalized, technocratic economics. It comprises over 26,000 documents extracted from 11 major periodicals across economics, sociology, history, and law.
+
+**Navigating the Dashboard:**
+
+*   **General Statistics:** Offers a macroscopic view of the dataset dynamics, illustrating the impact of historical events (e.g., WWII) on publication volumes and highlighting the typological diversity of the documents (from short book reviews to extensive theoretical articles).
+*   **Journal Statistics:** Provides a granular, journal-by-journal breakdown. It features specific temporal timelines, page count distributions, and a ranking of the most prolific contributors per journal.
+*   **Data Explorer:** A powerful search engine designed to filter and browse the complete metadata index. Researchers can isolate specific authors, trace concepts across years, and identify relevant documents before downloading the full-text files.
+
+**Open Science & Data Access:**
+
+Fully embracing the FAIR principles (Findable, Accessible, Interoperable, and Reusable), the complete full-text dataset (provided in both Raw OCR and Curated Tidy formats) is open-access and permanently hosted on [Nakala (DOI: 10.34847/nkl.0dee15ow)](https://doi.org/10.34847/nkl.0dee15ow). The underlying R processing pipeline used to clean and segment the historical scans is open-source and available on [GitHub](https://github.com/ncamilotto/ExEcoDatabase). Furthermore, the complete methodology, epistemological choices, and structural design of the dataset are extensively detailed in our accompanying data paper published in *TBD*.
+
+
+***
+
+*   **Author:** Nicolas Camilotto (Université Côte D’Azur, CNRS, GREDEG)
+*   **License:** Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0)
+*   **Citation:** *If you use this dataset or dashboard, please cite the associated data paper published in (TBD).*
