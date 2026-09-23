@@ -34,7 +34,7 @@ source(script_path, encoding = "UTF-8")
 # 4. Retrieving the base path from the .Renviron file
 # If FALSE: only key output objects are kept (non-essential intermediates are removed)
 # If TRUE: all intermediate objects created during the pipeline are preserved
-clean_environment = TRUE
+clean_environment = FALSE
 
 # ─────────────────────────────────────────────────────────────
 # Preprocessing
@@ -147,7 +147,8 @@ journal_config <- list(
   list(journal_label = "l_annee_sociologique",                     standardized_journal_name = "L'Année sociologique",                     pipeline = "looking_for_title_first",  run = TRUE),
   list(journal_label = "revue_d_economie_politique",               standardized_journal_name = "Revue d'économie politique",               pipeline = "looking_for_author_first", run = TRUE),
   list(journal_label = "revue_de_l_economie_contemporaine",        standardized_journal_name = "Revue de l'Économie Contemporaine",        pipeline = "no_final_cut",             run = TRUE),
-  list(journal_label = "revue_economique",                         standardized_journal_name = "Revue économique",                         pipeline = "looking_for_title_first",  run = TRUE)
+  list(journal_label = "revue_economique",                         standardized_journal_name = "Revue économique",                         pipeline = "looking_for_title_first",  run = TRUE),
+  list(journal_label = "revue_d_histoire_economique_et_sociale",   standardized_journal_name = "Revue d'histoire économique et sociale",   pipeline = "looking_for_title_first",  run = TRUE)
 )
 
 # ─────────────────────────────────────────────────────────────
