@@ -1,4 +1,4 @@
-# The ExEco Dataset: A Textual Dataset of French Economic and Social Thought (1918–1960)
+# The ExEco Corpus: A Textual Dataset of French Economic and Social Thought (1918–1960)
 
 ![Language](https://img.shields.io/badge/Language-R-blue.svg)
 ![License](https://img.shields.io/badge/License-CC%20BY--NC%204.0-lightgrey.svg)
